@@ -371,6 +371,44 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* ==================== MOBILE RESPONSIVENESS ==================== */
+        @media (max-width: 600px) {
+            body {
+                padding: 15px 10px;
+            }
+
+            .container {
+                padding: 25px 20px;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+
+            /* Stack the 2-column grid into a single column */
+            .form-row {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            /* Stack the Top Bar */
+            .top-bar {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .ro-number-display {
+                border-bottom: 1px solid #e2e8f0;
+                padding-bottom: 12px;
+            }
+
+            .mode-controls {
+                text-align: center;
+            }
+        }
     </style>
 </head>
 
@@ -808,14 +846,16 @@
                 // Collect form data
                 const formData = collectFormData();
 
-                // Generate PDF
+                // Generate PDF (Wait for it to build in memory)
                 const pdfBytes = await fillPDFTemplate(formData);
 
-                // Download PDF
-                downloadPDF(pdfBytes, `${formData.publicationName}-${nextRONumber.split('/')[1]}.pdf`);
-
-                // Save to Google Sheets
+                // 1. SAVE TO GOOGLE SHEETS FIRST
+                // We must do this before the PDF download, otherwise iOS Safari 
+                // suspends the script when the download prompt appears!
                 await saveToGoogleSheets(formData);
+
+                // 2. DOWNLOAD PDF SECOND
+                downloadPDF(pdfBytes, `${formData.publicationName}-${nextRONumber.split('/')[1]}.pdf`);
 
                 // Show success message
                 showStatus('success', `Release Order ${nextRONumber} generated successfully!`);
