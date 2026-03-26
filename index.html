@@ -600,39 +600,27 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        // IMPORTANT: Replace this with your Google Apps Script Web App URL
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxW8sBm-jx843ksdUwy4Vz7jvSrvIaCPRCHl1JrdBKpIlotAJMi5OYn8eCV4U7R5GocgA/exec';
 
         // ==================== GLOBAL VARIABLES ====================
         let pdfTemplate = null;
         let isEditMode = false;
-        // let nextRONumber = null;
+        let nextRONumber = null; // Fixed: Was previously commented out!
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', async () => {
-            // await loadPDFTemplate();
-            document.getElementById('generationDate').value = getTodayYYYYMMDD(); // Set default date
-            await fetchNextRONumber();
-            setupFormSubmission();
-        });
-
-        // ==================== PDF TEMPLATE LOADING ====================
-        async function loadPDFTemplate() {
             try {
-                const response = await fetch('RO.pdf');
-                const arrayBuffer = await response.arrayBuffer();
-                pdfTemplate = arrayBuffer;
-                console.log('PDF template loaded successfully');
+                document.getElementById('generationDate').value = getTodayYYYYMMDD();
+                await fetchNextRONumber();
+                setupFormSubmission();
             } catch (error) {
-                showStatus('error', 'Failed to load PDF template. Please refresh the page.');
-                console.error('Error loading PDF:', error);
+                console.error("Initialization error:", error);
             }
-        }
+        });
 
         // ==================== FETCH NEXT R.O. NUMBER ====================
         async function fetchNextRONumber() {
             try {
-                // Reverted to the simple fetch! Google Apps Script rejects complex fetch headers.
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL + '?action=getNextRONumber');
                 const data = await response.json();
 
@@ -669,23 +657,23 @@
 
             if (isEditMode) {
                 modeLabel.textContent = "Correction / Edit";
-                modeLabel.style.color = "#e53e3e"; // Red
+                modeLabel.style.color = "#e53e3e";
                 toggleBtn.textContent = "Switch to Create New";
                 searchBox.style.display = "block";
                 generateBtn.textContent = "Update & Re-Generate PDF";
-                generateBtn.style.background = "linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"; // Red button
-                roDisplay.style.opacity = "0.5"; // Dim the next number display
+                generateBtn.style.background = "linear-gradient(135deg, #e53e3e 0%, #c53030 100%)";
+                roDisplay.style.opacity = "0.5";
             } else {
                 modeLabel.textContent = "Create New";
-                modeLabel.style.color = "#667eea";
+                modeLabel.style.color = "#4f46e5";
                 toggleBtn.textContent = "Switch to Correction Mode";
                 searchBox.style.display = "none";
                 generateBtn.textContent = "Generate Release Order";
-                generateBtn.style.background = ""; // Reset gradient
+                generateBtn.style.background = "";
                 roDisplay.style.opacity = "1";
                 document.getElementById('releaseOrderForm').reset();
-                document.getElementById('generationDate').value = getTodayYYYYMMDD(); // <-- Re-apply today's date
-                fetchNextRONumber(); // Refresh next number
+                document.getElementById('generationDate').value = getTodayYYYYMMDD();
+                fetchNextRONumber();
             }
         }
 
@@ -703,7 +691,6 @@
                 if (result.success) {
                     populateForm(result.data);
                     showStatus('info', 'Data loaded. Make your corrections.');
-                    // Override the global nextRONumber so the PDF generator uses the OLD number
                     nextRONumber = result.data.roNumber;
                     document.getElementById('nextRONumber').textContent = nextRONumber + " (Editing)";
                 } else {
@@ -718,60 +705,29 @@
         }
 
         function populateForm(data) {
-            document.getElementById('publicationName').value = data.publicationName;
-            document.getElementById('edition').value = data.edition;
-            document.getElementById('client').value = data.client;
+            document.getElementById('publicationName').value = data.publicationName || '';
+            document.getElementById('edition').value = data.edition || '';
+            document.getElementById('client').value = data.client || '';
+            if (data.position) document.getElementById('position').value = data.position;
 
-            // Populate Position
-            if (data.position) {
-                document.getElementById('position').value = data.position;
-            }
-
-            // Parse Date for Input (Spreadsheet date format might differ)
-            // Handle Scheduled Date
             if (data.scheduledDate) {
-                // Response format: "03/01/2026  \"MUST\""
-                let rawDateStr = data.scheduledDate.toString();
-
-                // 1. Remove "MUST", quotes, and extra whitespace
-                // Result: "03/01/2026"
-                let cleanDateStr = rawDateStr.replace(/["']?MUST["']?/i, '').trim();
-
-                // 2. Split by "/"
-                const parts = cleanDateStr.split('/'); // ["03", "01", "2026"]
-
+                let cleanDateStr = data.scheduledDate.toString().replace(/["']?MUST["']?/i, '').trim();
+                const parts = cleanDateStr.split('/');
                 if (parts.length === 3) {
-                    // 3. Reformat to YYYY-MM-DD for the HTML input
-                    // parts[2] is Year (2026)
-                    // parts[1] is Month (01)
-                    // parts[0] is Day (03)
-                    const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-
-                    // Assign to input
-                    document.getElementById('scheduledDate').value = formattedDate;
-                } else {
-                    console.warn("Could not parse date:", cleanDateStr);
+                    document.getElementById('scheduledDate').value = `${parts[2]}-${parts[1]}-${parts[0]}`;
                 }
             }
 
-            // Handle Generation Date (Parse from DD/MM/YYYY to YYYY-MM-DD)
             if (data.date) {
                 let cleanGenDate = data.date.toString().trim();
-                const genParts = cleanGenDate.split('/'); // ["DD", "MM", "YYYY"]
-
+                const genParts = cleanGenDate.split('/');
                 if (genParts.length === 3) {
-                    const formattedGenDate = `${genParts[2]}-${genParts[1].padStart(2, '0')}-${genParts[0].padStart(2, '0')}`;
-                    document.getElementById('generationDate').value = formattedGenDate;
-                } else {
-                    console.warn("Could not parse generation date:", cleanGenDate);
+                    document.getElementById('generationDate').value = `${genParts[2]}-${genParts[1].padStart(2, '0')}-${genParts[0].padStart(2, '0')}`;
                 }
             }
 
-            // Rate
-            document.getElementById('rate').value = data.rate.split(' + GST')[0]; // Strip suffix to let user edit raw value
+            if (data.rate) document.getElementById('rate').value = data.rate.split(' + GST')[0];
 
-            // Attempt to parse Size back to width/height
-            // Format: "26CM (W) X 33CM (H)..."
             try {
                 const parts = data.size.match(/([\d.]+)CM \(W\) X ([\d.]+)CM \(H\)/);
                 if (parts) {
@@ -781,17 +737,14 @@
                 document.getElementById('isBW').checked = data.size.includes("(B/W)");
             } catch (e) { console.log("Could not auto-parse size"); }
 
-            // Handle Template Type
             if (data.templateType) {
                 const templateSelect = document.getElementById('templateType');
-                // Check if the value exists in the dropdown (to avoid errors)
                 if ([...templateSelect.options].some(o => o.value === data.templateType)) {
                     templateSelect.value = data.templateType;
                 }
             }
         }
 
-        // Helper to format today's date as YYYY-MM-DD for the HTML input
         function getTodayYYYYMMDD() {
             const today = new Date();
             const yyyy = today.getFullYear();
@@ -800,36 +753,23 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        // ==================== RESET FORM SMARTLY ====================
         function resetFormSmartly() {
-            // List of all input IDs you want to manage
-            const fieldIds = [
-                'generationDate',
-                'publicationName',
-                'edition',
-                'client',
-                'scheduledDate',
-                'size',
-                'position',
-                'rate',
-                'isBW', // Checkbox for B/W
-                'templateType'
-            ];
+            const fieldIds = ['generationDate', 'publicationName', 'edition', 'client', 'scheduledDate', 'sizeWidth', 'sizeHeight', 'position', 'rate', 'isBW', 'templateType'];
 
             fieldIds.forEach(id => {
-                // 1. Check if the "Retain" checkbox exists and is checked
-                const retainCheckbox = document.getElementById('retain_' + id);
+                const retainCheckboxId = id === 'sizeWidth' || id === 'sizeHeight' ? 'retain_size' : 'retain_' + id;
+                const retainCheckbox = document.getElementById(retainCheckboxId);
                 const shouldRetain = retainCheckbox && retainCheckbox.checked;
 
-                // 2. If NOT retaining, clear the field
                 if (!shouldRetain) {
                     const field = document.getElementById(id);
+                    if (!field) return;
                     if (field.type === 'checkbox') {
                         field.checked = false;
                     } else if (id === 'generationDate') {
-                        field.value = getTodayYYYYMMDD(); // Reset to today, not blank
+                        field.value = getTodayYYYYMMDD();
                     } else if (id === 'position') {
-                        field.value = 'BEST'; // <-- Reset to 'BEST' instead of blank
+                        field.value = 'BEST';
                     } else {
                         field.value = '';
                     }
@@ -844,24 +784,18 @@
             btn.innerHTML = '<span class="loading"></span> Generating...';
 
             try {
-                // Collect form data
                 const formData = collectFormData();
-
-                // Generate PDF locally (fast enough to keep iOS Safari happy)
                 const pdfBytes = await fillPDFTemplate(formData);
 
-                // 1. START GOOGLE SHEETS SAVE IN BACKGROUND (Do NOT 'await' it here!)
-                // This fires the network request but doesn't pause the script.
+                // 1. Send data to Google Sheets in background
                 const savePromise = saveToGoogleSheets(formData);
 
-                // 2. TRIGGER PDF SHARE IMMEDIATELY
-                // Because this happens right after the tap, Safari allows the Share Menu!
+                // 2. Trigger native download/share instantly for Safari
                 await downloadPDF(pdfBytes, `${formData.publicationName}-${nextRONumber.split('/')[1]}.pdf`);
 
-                // 3. NOW WAIT FOR GOOGLE SHEETS TO FINISH
+                // 3. Ensure Google save finishes
                 await savePromise;
 
-                // Show success message and reset
                 showStatus('success', `Release Order ${nextRONumber} generated successfully!`);
                 resetFormSmartly();
                 await fetchNextRONumber();
@@ -875,34 +809,23 @@
             }
         }
 
-        // ==================== COLLECT FORM DATA ====================
         function collectFormData() {
             const width = parseFloat(document.getElementById('sizeWidth').value);
             const height = parseFloat(document.getElementById('sizeHeight').value);
             const sqcm = (width * height).toFixed(2);
-
-            // Check B/W Checkbox
             const isBW = document.getElementById('isBW').checked;
-            const bwSuffix = isBW ? ' (B/W)' : ''; // Append string if checked
+            const bwSuffix = isBW ? ' (B/W)' : '';
 
             const scheduledDate = new Date(document.getElementById('scheduledDate').value);
-            const formattedScheduledDate = scheduledDate.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            const formattedScheduledDate = scheduledDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             const genDateVal = document.getElementById('generationDate').value;
             const genDateObj = new Date(genDateVal);
-            const formattedGenDate = genDateObj.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
+            const formattedGenDate = genDateObj.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
             return {
                 roNumber: nextRONumber,
-                date: formattedGenDate, // Now pulls from the UI instead of new Date()
+                date: formattedGenDate,
                 publicationName: document.getElementById('publicationName').value,
                 edition: document.getElementById('edition').value,
                 client: document.getElementById('client').value,
@@ -910,187 +833,55 @@
                 scheduledDateSS: formattedScheduledDate,
                 size: `${width}CM (W) X ${height}CM (H) = ${sqcm} SQCM ${bwSuffix}`,
                 sizeSS: `${sqcm}`,
-                // Add template filename to data so we know which one to load
                 templateFilename: document.getElementById('templateType').value,
                 templateType: document.getElementById('templateType').value,
                 position: document.getElementById('position').value,
-                // UPDATED: Hardcoded material value
                 material: 'Ad. enclosed/Download/By Mail',
                 rate: document.getElementById('rate').value + ' + GST as applicable',
             };
         }
 
-        // Helper function to draw centered text
         function drawCenteredText(page, text, font, fontSize, y, xStart, xEnd, color) {
             const textWidth = font.widthOfTextAtSize(text, fontSize);
             const boxWidth = xEnd - xStart;
-            // Calculate centered X position
             const centeredX = xStart + (boxWidth - textWidth) / 2;
-            page.drawText(text, {
-                x: centeredX,
-                y: y,
-                size: fontSize,
-                font: font,
-                color: color
-            });
+            page.drawText(text, { x: centeredX, y: y, size: fontSize, font: font, color: color });
         }
 
-
-        // ==================== FILL PDF TEMPLATE ====================
         async function fillPDFTemplate(data) {
             const { PDFDocument, rgb, StandardFonts } = PDFLib;
-
-            // Load the PDF template
-            // Fetch the SPECIFIC PDF based on user selection
             const response = await fetch(data.templateFilename);
             const pdfTemplate = await response.arrayBuffer();
             const pdfDoc = await PDFDocument.load(pdfTemplate);
-            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
             const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-            const pages = pdfDoc.getPages();
-            const firstPage = pages[0];
+            const firstPage = pdfDoc.getPages()[0];
 
-            // Define text positions (these will need to be adjusted based on your PDF)
-            const textConfig = {
-                fontSize: 14,
-                color: rgb(1, 0, 0)
-            };
-            const textConfigB = {
-                fontSize: 11,
-                color: rgb(0, 0, 0)
-            };
-            const textConfigC = {
-                fontSize: 12,
-                color: rgb(1, 0, 0)
-            };
+            const textConfig = { fontSize: 14, color: rgb(1, 0, 0) };
+            const textConfigB = { fontSize: 11, color: rgb(0, 0, 0) };
+            const textConfigC = { fontSize: 12, color: rgb(1, 0, 0) };
 
-            // R.O. Number
-            drawCenteredText(
-                firstPage,
-                data.roNumber,
-                boldFont,        // Pass the font instance
-                textConfigB.fontSize,
-                644,                  // Y coordinate
-                360,                   // Left boundary (xStart)
-                500,                  // Right boundary (xEnd)
-                textConfigB.color
-            );
+            drawCenteredText(firstPage, data.roNumber, boldFont, textConfigB.fontSize, 644, 360, 500, textConfigB.color);
+            drawCenteredText(firstPage, data.date, boldFont, textConfigB.fontSize, 619, 350, 500, textConfigB.color);
+            drawCenteredText(firstPage, data.publicationName, boldFont, textConfig.fontSize, 589, 65, 425, textConfig.color);
+            drawCenteredText(firstPage, data.edition, boldFont, textConfig.fontSize, 564, 65, 425, textConfig.color);
 
-            // Date
-            drawCenteredText(
-                firstPage,
-                data.date,
-                boldFont,        // Pass the font instance
-                textConfigB.fontSize,
-                619,                  // Y coordinate
-                350,                   // Left boundary (xStart)
-                500,                  // Right boundary (xEnd)
-                textConfigB.color
-            );
+            firstPage.drawText(data.client, { x: 110, y: 490, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
+            firstPage.drawText(data.scheduledDate, { x: 155, y: 452, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
 
-            // Publication Name (Line 1)
-            drawCenteredText(
-                firstPage,
-                data.publicationName,
-                boldFont,        // Pass the font instance
-                textConfig.fontSize,
-                589,                  // Y coordinate
-                65,                   // Left boundary (xStart)
-                425,                  // Right boundary (xEnd)
-                textConfig.color
-            );
+            let mainSizeText = data.size.replace(" (B/W)", "");
+            let suffix = data.size.endsWith(" (B/W)") ? "  (B/W)" : "";
 
-            // Edition (Line 2)
-            drawCenteredText(
-                firstPage,
-                data.edition,
-                boldFont,        // Pass the font instance
-                textConfig.fontSize,
-                564,                  // Y coordinate
-                65,                   // Left boundary (xStart)
-                425,                  // Right boundary (xEnd)
-                textConfig.color
-            );
-
-            // Client
-            firstPage.drawText(data.client, {
-                x: 110,
-                y: 490,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
-
-            // Scheduled Date
-            firstPage.drawText(data.scheduledDate, {
-                x: 155,
-                y: 452,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
-
-            // Size
-            // 1. Separate the main size text from the suffix
-            // We remove " (B/W)" from the data.size string first if it exists
-            let mainSizeText = data.size;
-            let suffix = "";
-
-            if (data.size.endsWith(" (B/W)")) {
-                mainSizeText = data.size.replace(" (B/W)", "");
-                suffix = "  (B/W)";
-            }
-            // 3. Draw Main Size Text in RED
-            firstPage.drawText(mainSizeText, {
-                x: 100,
-                y: 413,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
-            // 4. If we have a suffix, draw it in BLACK right after the red text
+            firstPage.drawText(mainSizeText, { x: 100, y: 413, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
             if (suffix) {
-                // Measure width of the red text so we know where to start the black text
                 const mainTextWidth = boldFont.widthOfTextAtSize(mainSizeText, textConfigC.fontSize);
-                firstPage.drawText(suffix, {
-                    x: 100 + mainTextWidth, // Start exactly where red text ends
-                    y: 413,
-                    size: textConfigC.fontSize,
-                    font: boldFont,
-                    color: textConfigB.color       // <--- BLACK COLOR
-                });
+                firstPage.drawText(suffix, { x: 100 + mainTextWidth, y: 413, size: textConfigC.fontSize, font: boldFont, color: textConfigB.color });
             }
 
-            // Position
-            firstPage.drawText(data.position, {
-                x: 120,
-                y: 374,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
+            firstPage.drawText(data.position, { x: 120, y: 374, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
+            firstPage.drawText(data.material, { x: 120, y: 334, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
+            firstPage.drawText(data.rate, { x: 100, y: 297, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
 
-            // Material
-            firstPage.drawText(data.material, {
-                x: 120,
-                y: 334,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
-
-            // Rate
-            firstPage.drawText(data.rate, {
-                x: 100,
-                y: 297,
-                size: textConfigC.fontSize,
-                font: boldFont,
-                color: textConfigC.color
-            });
-
-            // Save and return PDF bytes
-            const pdfBytes = await pdfDoc.save();
-            return pdfBytes;
+            return await pdfDoc.save();
         }
 
         // ==================== DOWNLOAD / SHARE PDF ====================
@@ -1098,66 +889,37 @@
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const file = new File([blob], filename, { type: 'application/pdf' });
 
-            // 1. TRY MOBILE NATIVE SHARE (iOS Safari)
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Release Order',
-                    });
-                    return; // Exit function if user shared/saved successfully
+                    await navigator.share({ files: [file], title: 'Release Order' });
+                    return;
                 } catch (error) {
-                    // If user just swiped the menu down, stop here.
                     if (error.name === 'AbortError') return;
                 }
             }
 
-            // 2. FALLBACK FOR DESKTOP
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.href = url;
             link.download = filename;
-            link.target = '_blank'; // Ensures it doesn't overwrite the current UI if download fails
+            link.target = '_blank';
 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
             setTimeout(() => URL.revokeObjectURL(url), 100);
-        }
-
-        // 2. FALLBACK FOR DESKTOP (Standard browser download)
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = filename;
-
-        // Append to body (required for Firefox & some older browsers)
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Clean up memory after a slight delay
-        setTimeout(() => URL.revokeObjectURL(url), 100);
         }
 
         // ==================== SAVE TO GOOGLE SHEETS ====================
         async function saveToGoogleSheets(data) {
-            const action = isEditMode ? 'updateReleaseOrder' : 'saveReleaseOrder'; // <--- DYNAMIC ACTION
-
+            const action = isEditMode ? 'updateReleaseOrder' : 'saveReleaseOrder';
             try {
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: action,
-                        data: data
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, data: data })
                 });
-
                 console.log('Data sent to Google Sheets (' + action + ')');
             } catch (error) {
                 console.error('Error saving to Google Sheets:', error);
@@ -1171,10 +933,7 @@
             statusDiv.className = 'status-message ' + type;
             statusDiv.textContent = message;
             statusDiv.style.display = 'block';
-
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 5000);
+            setTimeout(() => { statusDiv.style.display = 'none'; }, 5000);
         }
     </script>
 </body>
