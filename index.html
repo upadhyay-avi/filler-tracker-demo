@@ -375,188 +375,189 @@
 </head>
 
 <body>
-    <div class="header">
-        <h1><span>Art</span>graphics</h1>
-        <div class="tagline">Advertising Consultants</div>
-        <div class="app-badge">
-            📄 Release Order Generator
+    <div class="container">
+        <div class="header">
+            <h1><span>Art</span>graphics</h1>
+            <div class="tagline">Advertising Consultants</div>
+            <div class="app-badge">
+                📄 Release Order Generator
+            </div>
         </div>
-    </div>
 
-    <div class="top-bar">
-        <div class="ro-number-display" id="roNumberDisplay">
-            <span class="label">Next R.O. Number</span>
-            <span class="number" id="nextRONumber">Loading...</span>
+        <div class="top-bar">
+            <div class="ro-number-display" id="roNumberDisplay">
+                <span class="label">Next R.O. Number</span>
+                <span class="number" id="nextRONumber">Loading...</span>
+            </div>
+            <div class="mode-controls">
+                <h3>Mode: <span id="modeLabel" style="color: #4f46e5; font-weight: 700;">Create New</span></h3>
+                <button type="button" id="toggleModeBtn" onclick="toggleEditMode()">
+                    Switch to Correction Mode
+                </button>
+            </div>
         </div>
-        <div class="mode-controls">
-            <h3>Mode: <span id="modeLabel" style="color: #4f46e5; font-weight: 700;">Create New</span></h3>
-            <button type="button" id="toggleModeBtn" onclick="toggleEditMode()">
-                Switch to Correction Mode
+
+        <div id="correctionSearch" style="display: none;">
+            <div class="form-group" style="margin: 0;">
+                <div class="label-header">
+                    <label>Enter RO Number to Correct</label>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="searchRoNumber" placeholder="e.g. 25-26/0002">
+                    <button type="button" onclick="fetchROData()">Load</button>
+                </div>
+            </div>
+        </div>
+
+        <form id="releaseOrderForm">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <div class="label-header">
+                        <label for="templateType">RO Type *</label>
+                        <label class="retain-wrapper">
+                            <span>Retain</span>
+                            <input type="checkbox" class="retain-toggle" id="retain_templateType" checked>
+                        </label>
+                    </div>
+                    <select id="templateType" required>
+                        <option value="RO_With_Remarks.pdf">Small(Remarks)</option>
+                        <option value="RO_No_Remarks.pdf">Big(No Remarks)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-header">
+                        <label>Color Format</label>
+                        <label class="retain-wrapper">
+                            <span>Retain</span>
+                            <input type="checkbox" class="retain-toggle" id="retain_isBW" checked>
+                        </label>
+                    </div>
+                    <label
+                        style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; height: 100%;">
+                        <input type="checkbox" id="isBW" style="width: 18px; height: 18px; accent-color: #4f46e5;">
+                        <span style="font-size: 14px; font-weight: 500; color: #334155;">Print in Black & White
+                            (B/W)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="publicationName">Publication Name *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_publicationName">
+                            </label>
+                        </div>
+                        <input type="text" id="publicationName" required placeholder="e.g., The Times of India">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="edition">Edition/Place *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_edition">
+                            </label>
+                        </div>
+                        <input type="text" id="edition" required placeholder="e.g., Lucknow Edition">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="client">Client Name *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_client" checked>
+                            </label>
+                        </div>
+                        <input type="text" id="client" required placeholder="e.g., ABC Company Pvt. Ltd.">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="position">Position *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_position" checked>
+                            </label>
+                        </div>
+                        <input type="text" id="position" required value="BEST" placeholder="e.g., BEST, Front Page">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="generationDate">Generation Date *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_generationDate" checked>
+                            </label>
+                        </div>
+                        <input type="date" id="generationDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="scheduledDate">Scheduled Date *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_scheduledDate" checked>
+                            </label>
+                        </div>
+                        <input type="date" id="scheduledDate" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label>Size (in CM) *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_size" checked>
+                            </label>
+                        </div>
+                        <div class="size-input-group">
+                            <input type="number" id="sizeWidth" required placeholder="Width" min="1" step="0.1">
+                            <span>X</span>
+                            <input type="number" id="sizeHeight" required placeholder="Height" min="1" step="0.1">
+                        </div>
+                        <div class="helper-text">Example: 26 X 33 (Width X Height)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-header">
+                            <label for="rate">Rate *</label>
+                            <label class="retain-wrapper">
+                                <span>Retain</span>
+                                <input type="checkbox" class="retain-toggle" id="retain_rate" checked>
+                            </label>
+                        </div>
+                        <input type="text" id="rate" required placeholder="e.g., 2000 - less 20%">
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-generate" id="generateBtn">
+                Generate Release Order
             </button>
-        </div>
-    </div>
+        </form>
 
-    <div id="correctionSearch" style="display: none;">
-        <div class="form-group" style="margin: 0;">
-            <div class="label-header">
-                <label>Enter RO Number to Correct</label>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="searchRoNumber" placeholder="e.g. 25-26/0002">
-                <button type="button" onclick="fetchROData()">Load</button>
-            </div>
-        </div>
-    </div>
-
-    <form id="releaseOrderForm">
-
-        <div class="form-row">
-            <div class="form-group">
-                <div class="label-header">
-                    <label for="templateType">RO Type *</label>
-                    <label class="retain-wrapper">
-                        <span>Retain</span>
-                        <input type="checkbox" class="retain-toggle" id="retain_templateType" checked>
-                    </label>
-                </div>
-                <select id="templateType" required>
-                    <option value="RO_With_Remarks.pdf">Small(Remarks)</option>
-                    <option value="RO_No_Remarks.pdf">Big(No Remarks)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <div class="label-header">
-                    <label>Color Format</label>
-                    <label class="retain-wrapper">
-                        <span>Retain</span>
-                        <input type="checkbox" class="retain-toggle" id="retain_isBW" checked>
-                    </label>
-                </div>
-                <label
-                    style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; height: 100%;">
-                    <input type="checkbox" id="isBW" style="width: 18px; height: 18px; accent-color: #4f46e5;">
-                    <span style="font-size: 14px; font-weight: 500; color: #334155;">Print in Black & White
-                        (B/W)</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div class="form-row">
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="publicationName">Publication Name *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_publicationName">
-                        </label>
-                    </div>
-                    <input type="text" id="publicationName" required placeholder="e.g., The Times of India">
-                </div>
-
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="edition">Edition/Place *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_edition">
-                        </label>
-                    </div>
-                    <input type="text" id="edition" required placeholder="e.g., Lucknow Edition">
-                </div>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div class="form-row">
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="client">Client Name *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_client" checked>
-                        </label>
-                    </div>
-                    <input type="text" id="client" required placeholder="e.g., ABC Company Pvt. Ltd.">
-                </div>
-
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="position">Position *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_position" checked>
-                        </label>
-                    </div>
-                    <input type="text" id="position" required value="BEST" placeholder="e.g., BEST, Front Page">
-                </div>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div class="form-row">
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="generationDate">Generation Date *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_generationDate" checked>
-                        </label>
-                    </div>
-                    <input type="date" id="generationDate" required>
-                </div>
-
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="scheduledDate">Scheduled Date *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_scheduledDate" checked>
-                        </label>
-                    </div>
-                    <input type="date" id="scheduledDate" required>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div class="form-row">
-                <div class="form-group">
-                    <div class="label-header">
-                        <label>Size (in CM) *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_size" checked>
-                        </label>
-                    </div>
-                    <div class="size-input-group">
-                        <input type="number" id="sizeWidth" required placeholder="Width" min="1" step="0.1">
-                        <span>X</span>
-                        <input type="number" id="sizeHeight" required placeholder="Height" min="1" step="0.1">
-                    </div>
-                    <div class="helper-text">Example: 26 X 33 (Width X Height)</div>
-                </div>
-
-                <div class="form-group">
-                    <div class="label-header">
-                        <label for="rate">Rate *</label>
-                        <label class="retain-wrapper">
-                            <span>Retain</span>
-                            <input type="checkbox" class="retain-toggle" id="retain_rate" checked>
-                        </label>
-                    </div>
-                    <input type="text" id="rate" required placeholder="e.g., 2000 - less 20%">
-                </div>
-            </div>
-        </div>
-
-        <button type="submit" class="btn-generate" id="generateBtn">
-            Generate Release Order
-        </button>
-    </form>
-
-    <div class="status-message" id="statusMessage"></div>
+        <div class="status-message" id="statusMessage"></div>
     </div>
 
     <script>
