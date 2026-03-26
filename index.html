@@ -855,7 +855,7 @@
                 await saveToGoogleSheets(formData);
 
                 // 2. DOWNLOAD PDF SECOND
-                downloadPDF(pdfBytes, `${formData.publicationName}-${nextRONumber.split('/')[1]}.pdf`);
+                await downloadPDF(pdfBytes, `${formData.publicationName}-${nextRONumber.split('/')[1]}.pdf`);
 
                 // Show success message
                 showStatus('success', `Release Order ${nextRONumber} generated successfully!`);
@@ -1092,12 +1092,41 @@
         }
 
         // ==================== DOWNLOAD PDF ====================
-        function downloadPDF(pdfBytes, filename) {
+        async function downloadPDF(pdfBytes, filename) {
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+            // Convert the Blob to a File object, which the Web Share API requires
+            const file = new File([blob], filename, { type: 'application/pdf' });
+
+            // 1. TRY MOBILE NATIVE SHARE (iOS Safari / Android)
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Release Order',
+                    });
+                    console.log('File handed off to native OS share sheet.');
+                    return; // Exit function if successful
+                } catch (error) {
+                    console.log('Share failed or was cancelled by user:', error);
+                    // If the user just swiped the share sheet away, stop here.
+                    if (error.name === 'AbortError') return;
+                }
+            }
+
+            // 2. FALLBACK FOR DESKTOP (Standard browser download)
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            link.href = url;
             link.download = filename;
+
+            // Append to body (required for Firefox & some older browsers)
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+
+            // Clean up memory after a slight delay
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         }
 
         // ==================== SAVE TO GOOGLE SHEETS ====================
