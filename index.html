@@ -889,14 +889,14 @@
             if (data.clientExtra) {
                 const primaryWidth = boldFont.widthOfTextAtSize(data.client, textConfigC.fontSize);
                 // Draw extra text in Black starting after the Red text (with 5px padding)
-                firstPage.drawText(data.clientExtra, { x: clientX + primaryWidth + 5, y: clientY, size: textConfigC.fontSize, font: boldFont, color: textConfigB.color });
+                firstPage.drawText(data.clientExtra, { x: 110 + primaryWidth + 5, y: 490, size: textConfigC.fontSize, font: boldFont, color: textConfigB.color });
             }
 
             firstPage.drawText(data.scheduledDate, { x: 155, y: 452, size: textConfigC.fontSize, font: boldFont, color: textConfigC.color });
             if (data.dateExtra) {
                 const dateWidth = boldFont.widthOfTextAtSize(data.scheduledDate, textConfigC.fontSize);
                 // Draw extra text in Black starting after the Red text (with 5px padding)
-                firstPage.drawText(data.dateExtra, { x: dateX + dateWidth + 5, y: dateY, size: textConfigC.fontSize, font: boldFont, color: textConfigB.color });
+                firstPage.drawText(data.dateExtra, { x: 155 + dateWidth + 5, y: 452, size: textConfigC.fontSize, font: boldFont, color: textConfigB.color });
             }
 
             let mainSizeText = data.size.replace(" (B/W)", "");
