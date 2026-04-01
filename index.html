@@ -714,6 +714,8 @@
             document.getElementById('publicationName').value = data.publicationName || '';
             document.getElementById('edition').value = data.edition || '';
             document.getElementById('client').value = data.client || '';
+            document.getElementById('clientExtra').value = data.clientExtra || ''; // ADD THIS
+            document.getElementById('dateExtra').value = data.dateExtra || '';     // ADD THIS
             if (data.position) document.getElementById('position').value = data.position;
 
             if (data.scheduledDate) {
@@ -760,37 +762,23 @@
         }
 
         function resetFormSmartly() {
-            const fieldIds = ['generationDate', 'publicationName', 'edition', 'client', 'scheduledDate', 'sizeWidth', 'sizeHeight', 'position', 'rate', 'isBW', 'templateType'];
+            const fieldIds = ['generationDate', 'publicationName', 'edition', 'client', 'clientExtra', 'scheduledDate', 'dateExtra', 'sizeWidth', 'sizeHeight', 'position', 'rate', 'isBW', 'templateType'];
 
             fieldIds.forEach(id => {
-                // Map the correct Retain checkbox to each field
-                let retainCheckboxId;
+                let retainId = 'retain_' + id;
+                // Map extra fields to their parent's retain toggle
+                if (id === 'clientExtra') retainId = 'retain_client';
+                if (id === 'dateExtra') retainId = 'retain_scheduledDate';
+                if (id === 'sizeWidth' || id === 'sizeHeight') retainId = 'retain_size';
 
-                if (id === 'sizeWidth' || id === 'sizeHeight') {
-                    retainCheckboxId = 'retain_size';
-                } else if (id === 'clientExtra') {
-                    retainCheckboxId = 'retain_client'; // Ties extra field to the Client retain toggle
-                } else if (id === 'dateExtra') {
-                    retainCheckboxId = 'retain_scheduledDate'; // Ties extra field to the Date retain toggle
-                } else {
-                    retainCheckboxId = 'retain_' + id;
-                }
-
-                const retainCheckbox = document.getElementById(retainCheckboxId);
-                const shouldRetain = retainCheckbox && retainCheckbox.checked;
-
-                if (!shouldRetain) {
+                const retainCheckbox = document.getElementById(retainId);
+                if (!retainCheckbox || !retainCheckbox.checked) {
                     const field = document.getElementById(id);
                     if (!field) return;
-                    if (field.type === 'checkbox') {
-                        field.checked = false;
-                    } else if (id === 'generationDate') {
-                        field.value = getTodayYYYYMMDD();
-                    } else if (id === 'position') {
-                        field.value = 'Page 4/5';
-                    } else {
-                        field.value = '';
-                    }
+                    if (field.type === 'checkbox') field.checked = false;
+                    else if (id === 'generationDate') field.value = getTodayYYYYMMDD();
+                    else if (id === 'position') field.value = 'BEST';
+                    else field.value = '';
                 }
             });
         }
