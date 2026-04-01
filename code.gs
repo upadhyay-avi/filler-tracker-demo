@@ -10,16 +10,16 @@ const SHEET_NAME = 'Release Order Tracker';
 // ==================== MAIN HANDLER ====================
 function doGet(e) {
   const action = e.parameter.action;
-  
+
   if (action === 'getNextRONumber') {
     return getNextRONumber();
   }
-  
+
   // NEW: Action to fetch details of an existing RO
   if (action === 'fetchRO') {
     return fetchRODetails(e.parameter.roNumber);
   }
-  
+
   return ContentService.createTextOutput(JSON.stringify({
     success: false,
     message: 'Invalid action'
@@ -30,21 +30,21 @@ function doPost(e) {
   try {
     const requestData = JSON.parse(e.postData.contents);
     const action = requestData.action;
-    
+
     if (action === 'saveReleaseOrder') {
       return saveReleaseOrder(requestData.data);
     }
-    
+
     // NEW: Action to update an existing RO
     if (action === 'updateReleaseOrder') {
       return updateReleaseOrder(requestData.data);
     }
-    
+
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: 'Invalid action'
     })).setMimeType(ContentService.MimeType.JSON);
-    
+
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
@@ -54,36 +54,60 @@ function doPost(e) {
 }
 
 // ==================== GET NEXT R.O. NUMBER ====================
+// ==================== GET DYNAMIC R.O. NUMBER ====================
 function getNextRONumber() {
   try {
     const sheet = getOrCreateSheet();
     const lastRow = sheet.getLastRow();
 
-    // If sheet is empty or only has header
+    // 1. Calculate Current Financial Year (Starts April 1st) [cite: 54]
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0 = Jan, 3 = April
+
+    let startYear, endYear;
+    if (month < 3) { // If Jan, Feb, or Mar, we are still in the previous FY
+      startYear = year - 1;
+      endYear = year;
+    } else { // From April 1st onwards, we start the new FY
+      startYear = year;
+      endYear = year + 1;
+    }
+
+    // Creates format "26-27" [cite: 69]
+    const currentFY = String(startYear).slice(-2) + '-' + String(endYear).slice(-2);
+
+    // 2. If the sheet is empty, start fresh with the current FY [cite: 65]
     if (lastRow <= 1) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        nextRONumber: '25-26/0001'
+        nextRONumber: currentFY + '/0001'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Get the last R.O. number
+    // 3. Get and parse the last recorded R.O. number [cite: 66, 67]
     const lastRONumber = sheet.getRange(lastRow, 1).getValue();
-
     if (!lastRONumber) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        nextRONumber: '25-26/0001'
+        nextRONumber: currentFY + '/0001'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Parse and increment
     const parts = lastRONumber.split('/');
-    const yearPart = parts[0]; // e.g., "25-26"
-    const numberPart = parseInt(parts[1]); // e.g., 1
+    const lastFY = parts[0]; // e.g., "25-26" [cite: 68]
+    const lastNum = parseInt(parts[1]); // e.g., 0002 [cite: 70]
 
-    const nextNumber = (numberPart + 1).toString().padStart(4, '0');
-    const nextRONumber = yearPart + '/' + nextNumber;
+    // 4. Reset count if the Financial Year has changed
+    let nextRONumber;
+    if (lastFY === currentFY) {
+      // Same year: Increment by 1 
+      const nextCount = (lastNum + 1).toString().padStart(4, '0');
+      nextRONumber = currentFY + '/' + nextCount;
+    } else {
+      // New year started: Reset to 0001
+      nextRONumber = currentFY + '/0001';
+    }
 
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
@@ -151,7 +175,7 @@ function formatSheetDate(dateVal) {
 function fetchRODetails(roNumber) {
   const sheet = getOrCreateSheet();
   const data = sheet.getDataRange().getValues();
-  
+
   // OPTIMIZATION: Loop backwards (from last row up to row 1)
   // Most likely to find recent ROs quickly
   for (let i = data.length - 1; i >= 1; i--) {
@@ -176,7 +200,7 @@ function fetchRODetails(roNumber) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }
-  
+
   return ContentService.createTextOutput(JSON.stringify({
     success: false,
     message: 'RO Number not found'
@@ -187,14 +211,14 @@ function updateReleaseOrder(data) {
   const sheet = getOrCreateSheet();
   const range = sheet.getDataRange();
   const values = range.getValues();
-  
+
   // OPTIMIZATION: Loop backwards
   for (let i = values.length - 1; i >= 1; i--) {
     if (values[i][0] == data.roNumber) {
       // Found it! Update the row
       const rowData = [
         data.roNumber,
-        data.date, 
+        data.date,
         data.publicationName,
         data.edition,
         data.client,
@@ -209,17 +233,17 @@ function updateReleaseOrder(data) {
         data.rate,
         data.sizeSS
       ];
-      
+
       // i + 1 because sheet rows are 1-based
       sheet.getRange(i + 1, 1, 1, rowData.length).setValues([rowData]);
-      
+
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         message: 'RO Updated Successfully'
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }
-  
+
   return ContentService.createTextOutput(JSON.stringify({
     success: false,
     message: 'RO Number to update was not found'
