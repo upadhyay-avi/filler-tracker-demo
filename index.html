@@ -908,7 +908,6 @@
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
             // 1. Detect specifically if the user is on an Apple iOS device (iPhone/iPad)
-            // We use this because Android handles normal downloads perfectly fine!
             const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
 
             // 2. IF iPhone/iPad: Force the Native OS Share Sheet
@@ -916,7 +915,8 @@
                 const file = new File([blob], filename, { type: 'application/pdf' });
                 if (navigator.canShare({ files: [file] })) {
                     try {
-                        await navigator.share({ files: [file], title: 'Release Order' });
+                        // FIX: Removed the 'title' property so iOS doesn't generate a .txt file
+                        await navigator.share({ files: [file] });
                         return; // Exit if user shared/saved successfully
                     } catch (error) {
                         if (error.name === 'AbortError') return; // User just swiped it away
